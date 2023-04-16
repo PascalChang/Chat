@@ -26,7 +26,7 @@ Object.freeze(Actions);
 
 
 app.get("/", (req, res) => {
-	res.sendFile(__dirname +"/static/index.html");
+	res.sendFile("/static/index.html");
 });
 
 io.on("connection", (socket) => {
