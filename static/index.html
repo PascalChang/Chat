@@ -266,6 +266,7 @@
         let confirmPopup = document.getElementById("confirmPopup");
 
         function normalPair() {
+            messages.style.display = "";
             socket.emit('pair', "");
             randomForm.style.display = "none";
         };
