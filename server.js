@@ -96,8 +96,8 @@ io.on("connection", (socket) => {
     });
 });
 
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
+server.listen(port, () => {
+  console.log(`success`);
 });
 
 function goWaiting(socket, queue){
