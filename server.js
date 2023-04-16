@@ -26,7 +26,8 @@ Object.freeze(Actions);
 
 
 app.get("/", (req, res) => {
-	res.sendFile("/static/index.html");
+	
+	res.sendFile(__dirname +"/static/index.html");
 });
 
 io.on("connection", (socket) => {
@@ -97,7 +98,7 @@ io.on("connection", (socket) => {
 });
 
 server.listen(port, () => {
-  console.log(`success`);
+	console.log(`success dir name: ${__dirname}`);
 });
 
 function goWaiting(socket, queue){
