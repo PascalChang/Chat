@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style type="text/css">
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: rgba(150, 230, 210, 0.15);
+        }
+        
+        .container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+        }
+
+        .messageContainer {
+            /* height: 90vh; */
+            width: 100%;
+            background-color: rgba(150, 230, 210, 0.15);
+            /* border: 1px solid #ccc; */
+            padding: 0 0 0 5px;
+            overflow-y: scroll;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+        }
+
+        /* form */
+        #msgForm {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        #randomForm,
+        #keyForm {
+            bottom: 40%;
+            left: 20%;
+            right: 20%;
+        }
+
+        #msgForm,
+        #randomForm,
+        #keyForm {
+            padding: 0.25rem;
+            height: 3.5rem;
+            display: flex;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+            position: fixed;
+        }
+
+        /*  input */
+        #msgInput {
+            border: none;
+            padding: 0 1rem;
+            flex-grow: 1;
+            border-radius: 2rem;
+            margin: 0.25rem;
+        }
+
+        #keyInput {
+            display: block;
+        }
+
+        .inner>div {
+            margin-right: 1rem;
+            /* 設定元素間的間距 */
+        }
+
+        /* button */
+        button {
+            border-radius: 10px;
+            border: none;
+            padding: 0 1rem;
+            margin: 0.25rem;
+            outline: none;
+            color: #666666;
+        }
+
+        .funcButton {
+            background: #c8e6d2;
+            width: 50%;
+        }
+
+        .sendButton {
+            background: #c8e6d2;
+        }
+
+        .leaveButton {
+            background: #b4e6d2;
+        }
+
+        /* message */
+        .center {
+            text-align: center;
+            color: #666666;
+        }
+
+        .user {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .user>.text {
+            background-color: #aaa;
+            padding: 16px;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .remote>.text {
+            margin-left: 20px;
+            margin-right: 20px;
+            color: #666666;
+            background: #b4e6d2
+        }
+
+        .remote::after {
+            content: attr(data-now-time);
+            color: #aaa;
+        }
+
+        .local {
+            justify-content: flex-end;
+        }
+
+        .local>.text {
+            margin-right: 20px;
+            margin-left: 20px;
+            background: #c8e6d2;
+            color: #666666;
+        }
+
+        .local::before {
+            content: attr(data-now-time);
+            color: #aaa;
+        }
+
+        .mask {
+            position: absolute;
+            z-index: 9999;
+            width: 100%;
+            height: 100%;
+            background-color: #444;
+            opacity: 0.5;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .mask .popupMsg {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+            width: 200px;
+            background-color: #b4e6d2;
+            color: #666666;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+
+        .chatButtons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .form {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0 20px;
+        }
+
+        .inputWrapper {
+            margin-bottom: 10px;
+        }
+
+        .buttonWrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #msgForm {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        #msgInput {
+            margin-right: 10px;
+        }
+
+        .hiddenItem{
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="/socket.io/socket.io.js"></script>
+    <div class="container">
+        <div class="messageContainer" id="messages" style="display: none;"></div>
+        <div class="chatButtons">
+            <div class="form" id="randomForm">
+                <button class="funcButton" id="normalPairBtn" onclick="normalPair()">開始配對</button>
+                <button class="funcButton" onclick="changeKeyChat()">使用密語聊天</button>
+            </div>
+            <div class="form" id="keyForm" style="display:none;">
+                <div class="inputWrapper">
+                    <input id="keyInput" autocomplete="off" />
+                </div>
+                <div class="buttonWrapper">
+                    <button class="funcButton" id="keyPairBtn" onclick="keyPair()">開始配對</button>
+                    <button class="funcButton" onclick="changeRandomChat()">使用隨機聊天</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="msgForm" style="display:none;">
+        <button class="leaveButton" onclick="leaveConfirm()">離開</button>
+        <input id="msgInput" autocomplete="off" />
+        <button class="sendButton" id="sendBtn" onclick="sendMsg()">發送</button>
+    </div>
+    <div id="confirmPopup" class="mask">
+        <div class="popupMsg">
+            <button class="leaveButton" onclick="cancelPopup()">取消</button>
+            <button class="funcButton" onclick="leave()">確認離開</button>
+        </div>
+    </div>
+    <script>
+        let socket = io();
+        let randomForm = document.getElementById('randomForm');
+        let keyForm = document.getElementById('keyForm');
+        let msgForm = document.getElementById('msgForm');
+        let messages = document.getElementById('messages');
+
+        let keyInput = document.getElementById('keyInput');
+        let msgInput = document.getElementById('msgInput');
+
+        let confirmPopup = document.getElementById("confirmPopup");
+
+        function normalPair() {
+            socket.emit('pair', "");
+            randomForm.style.display = "none";
+        };
+
+        function keyPair() {
+            messages.style.display = "";
+            socket.emit('pair', keyInput.value);
+            keyInput.value = '';
+            keyForm.style.display = "none";
+        }
+
+        function sendMsg() {
+            if (msgInput.value) {
+                showMsg(msgInput.value, "local");
+                socket.emit('newMsg', msgInput.value);
+                msgInput.value = '';
+            }
+        }
+
+        document.addEventListener("keydown", function (event) {
+            if (event.keyCode === 13) {
+                sendMsg();
+            }
+        });
+
+        socket.on('newMsg', function (msg) {
+            showMsg(msg, "remote");
+        });
+
+        socket.on('waiting', function (msg) {
+            showMsg(msg, "center");
+        });
+
+        socket.on('partnerDisconnect', function (msg) {
+            goodbye(msg);
+        });
+
+        socket.on('handshack', function (uuid) {
+            socket.emit('handshack', uuid);
+        });
+
+        socket.on('handshackSuccess', function (msg) {
+            showMsg(msg, "center");
+            msgForm.style.display = "";
+        });
+
+        socket.on('goodbye', function (msg) {
+            goodbye(msg);
+        });
+
+        function showMsg(msg, type) {
+            let divItem = document.createElement('div');
+            let className;
+            if (type === "local") {
+                className = "user local";
+            } else if (type === "remote") {
+                className = "user remote";
+            } else {
+                className = "center";
+            }
+            divItem.className = className;
+            let show = getNowStr();
+            divItem.setAttribute("data-now-time", show);
+
+            let subDiv = document.createElement('div');
+            subDiv.innerText = msg;
+            subDiv.className = "text";
+
+            divItem.appendChild(subDiv)
+            messages.appendChild(divItem);
+            messages.scrollTo(0, messages.scrollHeight);
+        }
+
+        function changeKeyChat() {
+            randomForm.style.display = "none";
+            keyForm.style.display = "";
+            keyInput.value = '';
+        }
+
+        function changeRandomChat() {
+            randomForm.style.display = "";
+            keyForm.style.display = "none";
+        }
+
+        function goodbye(msg) {
+            document.getElementById("messages").innerHTML = "";
+            showMsg(msg, "center");
+            // 清除配對對象
+            socket.emit('clearPartner', "");
+        }
+
+        function leaveConfirm() {
+            confirmPopup.style.display = "flex";
+        }
+        function cancelPopup() {
+            confirmPopup.style.display = "none";
+        }
+
+        function leave() {
+            cancelPopup();
+            document.getElementById("messages").innerHTML = "";
+            socket.emit('goodbye', "");
+            // 顯示重新配對
+            keyForm.style.display = "none";
+            msgForm.style.display = "none";
+            randomForm.style.display = "";
+        }
+
+        function getNowStr() {
+            const now = new Date();
+            let hour = now.getHours();
+            let minute = now.getMinutes();
+            hour = hour < 10 ? 0 + hour : hour.toString();
+            minute = minute < 10 ? 0 + minute : minute.toString();
+
+            let show = `${hour}:${minute}`;
+            return show;
+        }
+
+    </script>
+</body>
+
+</html>
