@@ -64,22 +64,27 @@ class ChatRoomManager {
                 this.keysQueue.set(trimmedKey, []);
             }
             queue = this.keysQueue.get(trimmedKey);
+            console.log(`密語配對: ${trimmedKey}, 佇列長度: ${queue.length}`);
         } else {
             // 一般配對
             queue = this.guestQueue;
+            console.log(`隨機配對, 佇列長度: ${queue.length}`);
         }
 
         const partner = this.getPartnerFromQueue(queue);
         
         if (partner) {
+            console.log(`配對成功: ${socket.id} 與 ${partner.id}`);
             this.pairUsers(socket, partner);
         } else {
+            console.log(`加入等待佇列: ${socket.id}`);
             this.addToWaitingQueue(socket, queue);
         }
     }
 
     // 配對兩個用戶
     pairUsers(socket, partner) {
+        console.log(`發送握手請求: ${partner.id} -> ${socket.id}`);
         partner.emit("handshake", socket.id);
     }
 
@@ -99,10 +104,14 @@ class ChatRoomManager {
 
     // 處理握手
     handleHandshake(socket, partnerId) {
+        console.log(`處理握手: ${socket.id} -> ${partnerId}`);
         const partner = this.getPartnerFromPair(partnerId);
         if (partner) {
+            console.log(`握手成功: ${socket.id} 與 ${partnerId}`);
             partner.emit("handshakeSuccess", "配對成功");
             socket.emit("handshakeSuccess", "配對成功");
+        } else {
+            console.log(`握手失敗: 找不到夥伴 ${partnerId}`);
         }
     }
 

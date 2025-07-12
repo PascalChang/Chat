@@ -497,6 +497,11 @@
                     this.updateHeader('配對中...');
                 });
 
+                this.socket.on('handshake', (uuid) => {
+                    console.log('收到握手請求:', uuid);
+                    this.socket.emit('handshake', uuid);
+                });
+
                 this.socket.on('handshakeSuccess', (message) => {
                     this.showSystemMessage(message);
                     this.showChatInterface();
