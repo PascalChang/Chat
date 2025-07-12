@@ -79,16 +79,12 @@ class ChatRoomManager {
         return this.socketPairs.get(socketId);
     }
 
-    // 從佇列中獲取夥伴
-    getPartnerFromQueue(queue) {
-        return queue.length > 0 ? queue.pop() : null;
-    }
-
     // 加入等待佇列
     addToWaitingQueue(socket, queue, queueType = 'guest') {
         // 確保用戶不在其他佇列中
         this.removeFromAllQueues(socket.id);
         
+        // 將用戶加入佇列
         queue.push(socket);
         this.userQueues.set(socket.id, queueType);
         socket.emit("waiting", "配對中...");
@@ -123,12 +119,22 @@ class ChatRoomManager {
             return;
         }
 
-        const partner = this.getPartnerFromQueue(queue);
+        // 檢查佇列中是否有其他用戶可以配對
+        const availablePartners = queue.filter(s => s.id !== socket.id);
         
-        if (partner && partner.id !== socket.id) {
+        if (availablePartners.length > 0) {
+            // 找到配對夥伴
+            const partner = availablePartners[0];
+            // 從佇列中移除夥伴
+            const partnerIndex = queue.findIndex(s => s.id === partner.id);
+            if (partnerIndex !== -1) {
+                queue.splice(partnerIndex, 1);
+            }
+            
             console.log(`配對成功: ${socket.id} 與 ${partner.id}`);
             this.pairUsers(socket, partner);
         } else {
+            // 沒有可配對的用戶，加入等待佇列
             console.log(`加入等待佇列: ${socket.id}`);
             this.addToWaitingQueue(socket, queue, queueType);
         }
@@ -292,7 +298,9 @@ io.on("connection", (socket) => {
 
     // 清除配對資訊
     socket.on(chatManager.actions.CLEAR_PARTNER, () => {
+        console.log(`用戶 ${socket.id} 清除配對資訊`);
         chatManager.removeUserPartnership(socket.id);
+        chatManager.removeFromAllQueues(socket.id);
     });
 
     // 新訊息處理
@@ -353,4 +361,3 @@ process.on('SIGINT', () => {
         process.exit(0);
     });
 });
-

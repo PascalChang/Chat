@@ -194,6 +194,26 @@
             font-size: 0.9rem;
         }
 
+        .message.cancel-pairing .message-content {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            text-align: center;
+            border-radius: 20px;
+            margin: 8px auto;
+            max-width: 200px;
+            border: 1px solid #ff4757;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        }
+
+        .message.cancel-pairing .message-content:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+            background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+        }
+
         .message.waiting .message-content {
             background: linear-gradient(135deg, #fff3e0 0%, #ffcc02 100%);
             color: #e65100;
@@ -831,6 +851,18 @@
                 messageDiv.appendChild(messageContent);
                 fragment.appendChild(messageDiv);
                 
+                // 添加取消配對按鈕
+                const cancelButtonDiv = document.createElement('div');
+                cancelButtonDiv.className = 'message cancel-pairing';
+                
+                const cancelButtonContent = document.createElement('div');
+                cancelButtonContent.className = 'message-content';
+                cancelButtonContent.innerHTML = '<i class="fas fa-times"></i> 取消配對';
+                cancelButtonContent.onclick = () => this.cancelPairing();
+                
+                cancelButtonDiv.appendChild(cancelButtonContent);
+                fragment.appendChild(cancelButtonDiv);
+                
                 this.messageContainer.appendChild(fragment);
                 
                 requestAnimationFrame(() => {
@@ -1032,6 +1064,27 @@
                 
                 // 清除配對關係
                 this.socket.emit('clearPartner');
+            }
+
+            cancelPairing() {
+                // 清除配對狀態
+                this.socket.emit('clearPartner');
+                
+                // 清空聊天紀錄
+                this.messageContainer.innerHTML = '';
+                
+                // 回到配對介面
+                this.hideChatInterface();
+                this.isWaiting = false; // 重置配對狀態
+                this.partnerLeft = false; // 重置狀態
+                
+                // 更新標題
+                this.updateHeader('即時聊天室');
+                
+                // 顯示取消配對訊息
+                setTimeout(() => {
+                    this.showSystemMessage('已取消配對');
+                }, 100);
             }
 
             scrollToBottom() {
