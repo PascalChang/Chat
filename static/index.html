@@ -194,6 +194,25 @@
             font-size: 0.9rem;
         }
 
+        .message.waiting .message-content {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffcc02 100%);
+            color: #e65100;
+            text-align: center;
+            border-radius: 20px;
+            margin: 8px auto;
+            max-width: 300px;
+            border: 1px solid #ffb74d;
+            font-size: 1rem;
+            font-weight: 600;
+            animation: pulse-waiting 2s infinite;
+        }
+
+        @keyframes pulse-waiting {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         .message-time {
             font-size: 0.7rem;
             color: #999;
@@ -699,10 +718,12 @@
                 this.typingTimeout = null;
                 this.messageCache = new Map(); // 快取訊息以提升效能
                 this.partnerLeft = false; // 追蹤對方是否已離開
+                this.isWaiting = false; // 追蹤是否在配對中
                 
                 this.initializeElements();
                 this.bindEvents();
                 this.bindSocketEvents();
+                this.handlePageReload();
             }
 
             initializeElements() {
@@ -745,6 +766,65 @@
                         this.startKeyPairing();
                     }
                 });
+
+                // 頁面重新整理前保存狀態
+                window.addEventListener('beforeunload', () => {
+                    if (this.isWaiting || this.isConnected) {
+                        sessionStorage.setItem('chatState', JSON.stringify({
+                            isWaiting: this.isWaiting,
+                            isConnected: this.isConnected,
+                            partnerLeft: this.partnerLeft
+                        }));
+                    }
+                });
+            }
+
+            handlePageReload() {
+                // 檢查是否有保存的狀態
+                const savedState = sessionStorage.getItem('chatState');
+                if (savedState) {
+                    try {
+                        const state = JSON.parse(savedState);
+                        if (state.isWaiting) {
+                            // 如果之前在配對中，顯示配對中狀態
+                            this.showWaitingState();
+                        }
+                        // 清除保存的狀態
+                        sessionStorage.removeItem('chatState');
+                    } catch (e) {
+                        console.error('解析保存狀態失敗:', e);
+                        sessionStorage.removeItem('chatState');
+                    }
+                }
+            }
+
+            showWaitingState() {
+                this.isWaiting = true;
+                this.hidePairingInterface();
+                this.messageContainer.classList.remove('hidden');
+                this.inputContainer.classList.add('hidden');
+                this.updateHeader('配對中...');
+                this.showWaitingMessage();
+            }
+
+            showWaitingMessage() {
+                const fragment = document.createDocumentFragment();
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message waiting';
+                
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+                messageContent.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在尋找聊天夥伴...';
+                
+                messageDiv.appendChild(messageContent);
+                fragment.appendChild(messageDiv);
+                
+                this.messageContainer.appendChild(fragment);
+                
+                requestAnimationFrame(() => {
+                    this.scrollToBottom();
+                });
             }
 
             bindSocketEvents() {
@@ -760,7 +840,8 @@
                 });
 
                 this.socket.on('waiting', (message) => {
-                    this.showSystemMessage(message);
+                    this.isWaiting = true;
+                    this.showWaitingMessage();
                     this.updateHeader('配對中...');
                     this.partnerLeft = false; // 重置狀態
                 });
@@ -771,6 +852,7 @@
                 });
 
                 this.socket.on('handshakeSuccess', (message) => {
+                    this.isWaiting = false;
                     this.showSystemMessage(message);
                     this.showChatInterface();
                     this.updateHeader('聊天中');
@@ -910,6 +992,7 @@
                 this.messageContainer.innerHTML = '';
                 this.hideChatInterface();
                 this.partnerLeft = false; // 重置狀態
+                this.isWaiting = false; // 重置配對狀態
             }
 
             scrollToBottom() {
