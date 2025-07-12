@@ -1,220 +1,363 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
-    <style type="text/css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>即時聊天室</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         html {
             scroll-behavior: smooth;
         }
 
         body {
-            background: rgba(150, 230, 210, 0.15);
-        }
-        
-        .container {
-            position: relative;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
-            height: 90vh;
-        }
-
-        .messageContainer {
-            /* height: 90vh; */
-            width: 100%;
-            background-color: rgba(150, 230, 210, 0.15);
-            /* border: 1px solid #ccc; */
-            padding: 0 0 0 5px;
-            overflow-y: scroll;
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-        }
-
-        /* form */
-        #msgForm {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-        }
-
-        #randomForm,
-        #keyForm {
-            bottom: 40%;
-            left: 20%;
-            right: 20%;
-        }
-
-        #msgForm,
-        #randomForm,
-        #keyForm {
-            padding: 0.25rem;
-            height: 3.5rem;
-            display: flex;
-            box-sizing: border-box;
-            backdrop-filter: blur(10px);
-            position: fixed;
-        }
-
-        /*  input */
-        #msgInput {
-            border: none;
-            padding: 0 1rem;
-            flex-grow: 1;
-            border-radius: 2rem;
-            margin: 0.25rem;
-        }
-
-        #keyInput {
-            display: block;
-        }
-
-        .inner>div {
-            margin-right: 1rem;
-            /* 設定元素間的間距 */
-        }
-
-        /* button */
-        button {
-            border-radius: 10px;
-            border: none;
-            padding: 0 1rem;
-            margin: 0.25rem;
-            outline: none;
-            color: #666666;
-        }
-
-        .funcButton {
-            background: #c8e6d2;
-            width: 50%;
-        }
-
-        .sendButton {
-            background: #c8e6d2;
-        }
-
-        .leaveButton {
-            background: #b4e6d2;
-        }
-
-        /* message */
-        .center {
-            text-align: center;
-            color: #666666;
-        }
-
-        .user {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 20px;
-        }
-
-        .user>.text {
-            background-color: #aaa;
-            padding: 16px;
-            border-radius: 10px;
-            position: relative;
-        }
-
-        .remote>.text {
-            margin-left: 20px;
-            margin-right: 20px;
-            color: #666666;
-            background: #b4e6d2
-        }
-
-        .local::before,
-        .remote::after {
-            content: attr(data-now-time);
-            color: #aaa;
-            align-self: end;
-        }
-
-        .local {
-            justify-content: flex-end;
-        }
-
-        .local>.text {
-            margin-right: 20px;
-            margin-left: 20px;
-            background: #c8e6d2;
-            color: #666666;
-        }
-
-        .mask {
-            position: absolute;
-            z-index: 9999;
-            width: 100%;
-            height: 100%;
-            background-color: #444;
-            opacity: 0.5;
-            display: none;
-            justify-content: center;
             align-items: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-        }
-
-        .mask .popupMsg {
-            display: flex;
-            flex-direction: column;
             justify-content: center;
-            align-items: center;
-            height: 100px;
-            width: 200px;
-            background-color: #b4e6d2;
-            color: #666666;
-            border: 1px solid #ccc;
             padding: 20px;
         }
 
-        .chatButtons {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 20px;
-        }
-
-        .form {
+        .app-container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            margin: 0 20px;
+            overflow: hidden;
         }
 
-        .inputWrapper {
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .message-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .message-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .message-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .message-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.local {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.local .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.remote .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e1e5e9;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.system .message-content {
+            background: #e3f2fd;
+            color: #1976d2;
+            text-align: center;
+            border-radius: 20px;
+            margin: 10px auto;
+            max-width: 300px;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e1e5e9;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .message-input:focus {
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #e1e5e9;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .pairing-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .pairing-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .pairing-options {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .option-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .option-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .option-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
             margin-bottom: 10px;
         }
 
-        .buttonWrapper {
+        .option-description {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .key-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .key-input:focus {
+            border-color: #667eea;
+        }
+
+        .button-group {
             display: flex;
-            justify-content: center;
-            align-items: center;
+            gap: 10px;
         }
 
-        #msgForm {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 20px;
+        .button-group .btn {
+            flex: 1;
         }
 
-        #msgInput {
-            margin-right: 10px;
+        .hidden {
+            display: none !important;
         }
 
-        .hiddenItem{
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
             display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .typing-indicator {
+            padding: 10px 20px;
+            color: #666;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .pairing-options {
+                max-width: 100%;
+            }
+
+            .option-card {
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -229,168 +372,301 @@
 </script>
 <body>
     <script src="/socket.io/socket.io.js"></script>
-    <div class="container">
-        <div class="messageContainer" id="messages" style="display: none;"></div>
-        <div class="chatButtons">
-            <div class="form" id="randomForm">
-                <button class="funcButton" id="normalPairBtn" onclick="normalPair()">開始配對</button>
-                <button class="funcButton" onclick="changeKeyChat()">使用密語聊天</button>
+    
+    <div class="app-container">
+        <div class="header">
+            <span id="header-text">即時聊天室</span>
+        </div>
+        
+        <div class="chat-container">
+            <!-- 配對介面 -->
+            <div class="pairing-container" id="pairing-container">
+                <h1 class="pairing-title">選擇聊天方式</h1>
+                <div class="pairing-options">
+                    <div class="option-card">
+                        <div class="option-title">隨機配對</div>
+                        <div class="option-description">與隨機用戶進行匿名聊天</div>
+                        <button class="btn btn-primary" onclick="startRandomPairing()">
+                            <span>開始配對</span>
+                        </button>
+                    </div>
+                    
+                    <div class="option-card">
+                        <div class="option-title">密語配對</div>
+                        <div class="option-description">使用密語與特定用戶配對</div>
+                        <input type="text" class="key-input" id="key-input" placeholder="輸入密語" autocomplete="off">
+                        <div class="button-group">
+                            <button class="btn btn-secondary" onclick="switchToRandom()">隨機聊天</button>
+                            <button class="btn btn-primary" onclick="startKeyPairing()">開始配對</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="form" id="keyForm" style="display:none;">
-                <div class="inputWrapper">
-                    <input id="keyInput" autocomplete="off" />
-                </div>
-                <div class="buttonWrapper">
-                    <button class="funcButton" id="keyPairBtn" onclick="keyPair()">開始配對</button>
-                    <button class="funcButton" onclick="changeRandomChat()">使用隨機聊天</button>
-                </div>
+
+            <!-- 聊天介面 -->
+            <div class="message-container hidden" id="message-container"></div>
+            
+            <!-- 輸入介面 -->
+            <div class="input-container hidden" id="input-container">
+                <button class="btn btn-danger" onclick="showLeaveConfirm()">離開</button>
+                <input type="text" class="message-input" id="message-input" placeholder="輸入訊息..." autocomplete="off">
+                <button class="btn btn-primary" onclick="sendMessage()">發送</button>
             </div>
         </div>
     </div>
-    <div id="msgForm" style="display:none;">
-        <button class="leaveButton" onclick="leaveConfirm()">離開</button>
-        <input id="msgInput" autocomplete="off" />
-        <button class="sendButton" id="sendBtn" onclick="sendMsg()">發送</button>
-    </div>
-    <div id="confirmPopup" class="mask">
-        <div class="popupMsg">
-            <button class="leaveButton" onclick="cancelPopup()">取消</button>
-            <button class="funcButton" onclick="leave()">確認離開</button>
+
+    <!-- 離開確認彈窗 -->
+    <div class="modal-overlay" id="leave-modal">
+        <div class="modal">
+            <div class="modal-title">確認離開</div>
+            <p>確定要離開聊天室嗎？</p>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="hideLeaveConfirm()">取消</button>
+                <button class="btn btn-danger" onclick="leaveChat()">確認離開</button>
+            </div>
         </div>
     </div>
+
     <script>
-        let socket = io();
-        let randomForm = document.getElementById('randomForm');
-        let keyForm = document.getElementById('keyForm');
-        let msgForm = document.getElementById('msgForm');
-        let messages = document.getElementById('messages');
+        class ChatApp {
+            constructor() {
+                this.socket = io();
+                this.isConnected = false;
+                this.isTyping = false;
+                this.typingTimeout = null;
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.bindSocketEvents();
+            }
 
-        let keyInput = document.getElementById('keyInput');
-        let msgInput = document.getElementById('msgInput');
+            initializeElements() {
+                this.pairingContainer = document.getElementById('pairing-container');
+                this.messageContainer = document.getElementById('message-container');
+                this.inputContainer = document.getElementById('input-container');
+                this.messageInput = document.getElementById('message-input');
+                this.keyInput = document.getElementById('key-input');
+                this.leaveModal = document.getElementById('leave-modal');
+                this.headerText = document.getElementById('header-text');
+            }
 
-        let confirmPopup = document.getElementById("confirmPopup");
+            bindEvents() {
+                // Enter 鍵發送訊息
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
 
-        function normalPair() {
-            messages.style.display = "";
-            socket.emit('pair', "");
-            randomForm.style.display = "none";
-        };
+                // 輸入時顯示正在輸入
+                this.messageInput.addEventListener('input', () => {
+                    if (!this.isTyping) {
+                        this.isTyping = true;
+                        this.socket.emit('typing', true);
+                    }
+                    
+                    clearTimeout(this.typingTimeout);
+                    this.typingTimeout = setTimeout(() => {
+                        this.isTyping = false;
+                        this.socket.emit('typing', false);
+                    }, 1000);
+                });
 
-        function keyPair() {
-            messages.style.display = "";
-            socket.emit('pair', keyInput.value);
-            keyInput.value = '';
-            keyForm.style.display = "none";
-        }
+                // 密語輸入框 Enter 鍵
+                this.keyInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.startKeyPairing();
+                    }
+                });
+            }
 
-        function sendMsg() {
-            if (msgInput.value) {
-                showMsg(msgInput.value, "local");
-                socket.emit('newMsg', msgInput.value);
-                msgInput.value = '';
+            bindSocketEvents() {
+                this.socket.on('connect', () => {
+                    console.log('已連接到伺服器');
+                });
+
+                this.socket.on('disconnect', () => {
+                    console.log('與伺服器斷線');
+                    this.showSystemMessage('與伺服器斷線，請重新整理頁面');
+                });
+
+                this.socket.on('waiting', (message) => {
+                    this.showSystemMessage(message);
+                    this.updateHeader('配對中...');
+                });
+
+                this.socket.on('handshakeSuccess', (message) => {
+                    this.showSystemMessage(message);
+                    this.showChatInterface();
+                    this.updateHeader('聊天中');
+                });
+
+                this.socket.on('newMsg', (message) => {
+                    this.addMessage(message, 'remote');
+                });
+
+                this.socket.on('partnerDisconnect', (message) => {
+                    this.showSystemMessage(message);
+                    this.hideChatInterface();
+                    this.updateHeader('即時聊天室');
+                });
+
+                this.socket.on('goodbye', (message) => {
+                    this.showSystemMessage(message);
+                    this.hideChatInterface();
+                    this.updateHeader('即時聊天室');
+                });
+
+                this.socket.on('error', (error) => {
+                    this.showSystemMessage(`錯誤: ${error}`);
+                });
+            }
+
+            startRandomPairing() {
+                this.socket.emit('pair', '');
+                this.hidePairingInterface();
+            }
+
+            startKeyPairing() {
+                const key = this.keyInput.value.trim();
+                if (!key) {
+                    alert('請輸入密語');
+                    return;
+                }
+                this.socket.emit('pair', key);
+                this.keyInput.value = '';
+                this.hidePairingInterface();
+            }
+
+            sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message) return;
+
+                this.addMessage(message, 'local');
+                this.socket.emit('newMsg', message);
+                this.messageInput.value = '';
+            }
+
+            addMessage(content, type) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+                messageContent.textContent = content;
+                
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'message-time';
+                timeDiv.textContent = this.getCurrentTime();
+                
+                messageDiv.appendChild(messageContent);
+                messageDiv.appendChild(timeDiv);
+                
+                this.messageContainer.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            showSystemMessage(message) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message system';
+                
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+                messageContent.textContent = message;
+                
+                messageDiv.appendChild(messageContent);
+                this.messageContainer.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            showChatInterface() {
+                this.messageContainer.classList.remove('hidden');
+                this.inputContainer.classList.remove('hidden');
+                this.messageInput.focus();
+            }
+
+            hideChatInterface() {
+                this.messageContainer.classList.add('hidden');
+                this.inputContainer.classList.add('hidden');
+                this.showPairingInterface();
+            }
+
+            hidePairingInterface() {
+                this.pairingContainer.classList.add('hidden');
+            }
+
+            showPairingInterface() {
+                this.pairingContainer.classList.remove('hidden');
+                this.messageContainer.innerHTML = '';
+            }
+
+            showLeaveConfirm() {
+                this.leaveModal.style.display = 'flex';
+            }
+
+            hideLeaveConfirm() {
+                this.leaveModal.style.display = 'none';
+            }
+
+            leaveChat() {
+                this.socket.emit('goodbye');
+                this.hideLeaveConfirm();
+                this.hideChatInterface();
+            }
+
+            scrollToBottom() {
+                this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
+            }
+
+            getCurrentTime() {
+                const now = new Date();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                return `${hours}:${minutes}`;
+            }
+
+            updateHeader(text) {
+                this.headerText.textContent = text;
             }
         }
 
-        document.addEventListener("keydown", function (event) {
-            if (event.keyCode === 13) {
-                sendMsg();
-            }
+        // 全域函數，供 HTML 按鈕調用
+        let chatApp;
+
+        function startRandomPairing() {
+            chatApp.startRandomPairing();
+        }
+
+        function startKeyPairing() {
+            chatApp.startKeyPairing();
+        }
+
+        function switchToRandom() {
+            document.getElementById('key-input').value = '';
+        }
+
+        function sendMessage() {
+            chatApp.sendMessage();
+        }
+
+        function showLeaveConfirm() {
+            chatApp.showLeaveConfirm();
+        }
+
+        function hideLeaveConfirm() {
+            chatApp.hideLeaveConfirm();
+        }
+
+        function leaveChat() {
+            chatApp.leaveChat();
+        }
+
+        // 初始化應用程式
+        document.addEventListener('DOMContentLoaded', () => {
+            chatApp = new ChatApp();
         });
-
-        socket.on('newMsg', function (msg) {
-            showMsg(msg, "remote");
-        });
-
-        socket.on('waiting', function (msg) {
-            showMsg(msg, "center");
-        });
-
-        socket.on('partnerDisconnect', function (msg) {
-            goodbye(msg);
-        });
-
-        socket.on('handshack', function (uuid) {
-            socket.emit('handshack', uuid);
-        });
-
-        socket.on('handshackSuccess', function (msg) {
-            showMsg(msg, "center");
-            msgForm.style.display = "";
-        });
-
-        socket.on('goodbye', function (msg) {
-            goodbye(msg);
-        });
-
-        function showMsg(msg, type) {
-            let divItem = document.createElement('div');
-            let className;
-            if (type === "local") {
-                className = "user local";
-            } else if (type === "remote") {
-                className = "user remote";
-            } else {
-                className = "center";
-            }
-            divItem.className = className;
-            let show = getNowStr();
-            divItem.setAttribute("data-now-time", show);
-
-            let subDiv = document.createElement('div');
-            subDiv.innerText = msg;
-            subDiv.className = "text";
-
-            divItem.appendChild(subDiv)
-            messages.appendChild(divItem);
-            messages.scrollTo(0, messages.scrollHeight);
-        }
-
-        function changeKeyChat() {
-            randomForm.style.display = "none";
-            keyForm.style.display = "";
-            keyInput.value = '';
-        }
-
-        function changeRandomChat() {
-            randomForm.style.display = "";
-            keyForm.style.display = "none";
-        }
-
-        function goodbye(msg) {
-            document.getElementById("messages").innerHTML = "";
-            showMsg(msg, "center");
-            // 清除配對對象
-            socket.emit('clearPartner', "");
-        }
-
-        function leaveConfirm() {
-            confirmPopup.style.display = "flex";
-        }
-        function cancelPopup() {
-            confirmPopup.style.display = "none";
-        }
-
-        function leave() {
-            cancelPopup();
-            document.getElementById("messages").innerHTML = "";
-            socket.emit('goodbye', "");
-            // 顯示重新配對
-            keyForm.style.display = "none";
-            msgForm.style.display = "none";
-            randomForm.style.display = "";
-        }
-
-        function getNowStr() {
-            const now = new Date();
-            let hour = now.getHours();
-            let minute = now.getMinutes();
-            hour = hour < 10 ? 0 + hour : hour.toString();
-            minute = minute < 10 ? 0 + minute : minute.toString();
-
-            let show = `${hour}:${minute}`;
-            return show;
-        }
-
     </script>
 </body>
 
