@@ -698,6 +698,7 @@
                 this.isTyping = false;
                 this.typingTimeout = null;
                 this.messageCache = new Map(); // 快取訊息以提升效能
+                this.partnerLeft = false; // 追蹤對方是否已離開
                 
                 this.initializeElements();
                 this.bindEvents();
@@ -761,6 +762,7 @@
                 this.socket.on('waiting', (message) => {
                     this.showSystemMessage(message);
                     this.updateHeader('配對中...');
+                    this.partnerLeft = false; // 重置狀態
                 });
 
                 this.socket.on('handshake', (uuid) => {
@@ -772,6 +774,7 @@
                     this.showSystemMessage(message);
                     this.showChatInterface();
                     this.updateHeader('聊天中');
+                    this.partnerLeft = false; // 重置狀態
                 });
 
                 this.socket.on('newMsg', (message) => {
@@ -781,13 +784,13 @@
                 this.socket.on('partnerDisconnect', (message) => {
                     this.showSystemMessage(message);
                     this.updateHeader('聊天中 - 對方已離開');
-                    // 不清空聊天紀錄，只提示對方離開
+                    this.partnerLeft = true; // 標記對方已離開
                 });
 
                 this.socket.on('goodbye', (message) => {
                     this.showSystemMessage(message);
                     this.updateHeader('聊天中 - 對方已離開');
-                    // 不清空聊天紀錄，只提示對方離開
+                    this.partnerLeft = true; // 標記對方已離開
                 });
 
                 this.socket.on('error', (error) => {
@@ -889,6 +892,11 @@
             }
 
             showLeaveConfirm() {
+                // 如果對方已經離開，直接離開不需要確認
+                if (this.partnerLeft) {
+                    this.leaveChat();
+                    return;
+                }
                 this.leaveModal.style.display = 'flex';
             }
 
@@ -900,6 +908,7 @@
                 this.socket.emit('goodbye');
                 this.hideLeaveConfirm();
                 this.hideChatInterface();
+                this.partnerLeft = false; // 重置狀態
             }
 
             scrollToBottom() {
