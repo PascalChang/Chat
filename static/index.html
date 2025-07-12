@@ -712,7 +712,15 @@
     <script>
         class ChatApp {
             constructor() {
-                this.socket = io();
+                // 初始化 Socket.IO 連接
+                this.socket = io({
+                    transports: ['websocket', 'polling'],
+                    timeout: 20000,
+                    reconnection: true,
+                    reconnectionAttempts: 5,
+                    reconnectionDelay: 1000
+                });
+                
                 this.isConnected = false;
                 this.isTyping = false;
                 this.typingTimeout = null;
@@ -805,6 +813,9 @@
                 this.inputContainer.classList.add('hidden');
                 this.updateHeader('配對中...');
                 this.showWaitingMessage();
+                
+                // 清除之前的聊天記錄
+                this.messageContainer.innerHTML = '';
             }
 
             showWaitingMessage() {
@@ -831,12 +842,14 @@
                 this.socket.on('connect', () => {
                     console.log('已連接到伺服器');
                     this.isConnected = true;
+                    this.updateHeader('即時聊天室');
                 });
 
                 this.socket.on('disconnect', () => {
                     console.log('與伺服器斷線');
                     this.isConnected = false;
                     this.showSystemMessage('與伺服器斷線，請重新整理頁面');
+                    this.updateHeader('連線中斷');
                 });
 
                 this.socket.on('waiting', (message) => {
@@ -876,24 +889,47 @@
                 });
 
                 this.socket.on('error', (error) => {
+                    console.error('收到錯誤:', error);
                     this.showSystemMessage(`錯誤: ${error}`);
+                    
+                    // 如果是配對相關錯誤，回到配對介面
+                    if (error.includes('配對') || error.includes('聊天中')) {
+                        setTimeout(() => {
+                            this.hideChatInterface();
+                            this.isWaiting = false;
+                            this.partnerLeft = false;
+                        }, 2000);
+                    }
                 });
             }
 
             startRandomPairing() {
+                if (!this.isConnected) {
+                    this.showSystemMessage('尚未連接到伺服器，請稍後再試');
+                    return;
+                }
+                
                 this.socket.emit('pair', '');
                 this.hidePairingInterface();
+                this.showWaitingState();
             }
 
             startKeyPairing() {
+                if (!this.isConnected) {
+                    this.showSystemMessage('尚未連接到伺服器，請稍後再試');
+                    return;
+                }
+                
                 const key = this.keyInput.value.trim();
                 if (!key) {
                     alert('請輸入密語');
                     return;
                 }
+                
                 this.socket.emit('pair', key);
                 this.keyInput.value = '';
                 this.hidePairingInterface();
+                this.showWaitingState();
             }
 
             sendMessage() {
@@ -993,6 +1029,9 @@
                 this.hideChatInterface();
                 this.partnerLeft = false; // 重置狀態
                 this.isWaiting = false; // 重置配對狀態
+                
+                // 清除配對關係
+                this.socket.emit('clearPartner');
             }
 
             scrollToBottom() {
@@ -1015,32 +1054,62 @@
         let chatApp;
 
         function startRandomPairing() {
-            chatApp.startRandomPairing();
+            if (chatApp) {
+                chatApp.startRandomPairing();
+            } else {
+                console.error('聊天應用程式尚未初始化');
+            }
         }
 
         function startKeyPairing() {
-            chatApp.startKeyPairing();
+            if (chatApp) {
+                chatApp.startKeyPairing();
+            } else {
+                console.error('聊天應用程式尚未初始化');
+            }
         }
 
         function sendMessage() {
-            chatApp.sendMessage();
+            if (chatApp) {
+                chatApp.sendMessage();
+            } else {
+                console.error('聊天應用程式尚未初始化');
+            }
         }
 
         function showLeaveConfirm() {
-            chatApp.showLeaveConfirm();
+            if (chatApp) {
+                chatApp.showLeaveConfirm();
+            } else {
+                console.error('聊天應用程式尚未初始化');
+            }
         }
 
         function hideLeaveConfirm() {
-            chatApp.hideLeaveConfirm();
+            if (chatApp) {
+                chatApp.hideLeaveConfirm();
+            } else {
+                console.error('聊天應用程式尚未初始化');
+            }
         }
 
         function leaveChat() {
-            chatApp.leaveChat();
+            if (chatApp) {
+                chatApp.leaveChat();
+            } else {
+                console.error('聊天應用程式尚未初始化');
+            }
         }
 
         // 初始化應用程式
         document.addEventListener('DOMContentLoaded', () => {
-            chatApp = new ChatApp();
+            try {
+                chatApp = new ChatApp();
+                console.log('聊天應用程式初始化成功');
+            } catch (error) {
+                console.error('聊天應用程式初始化失敗:', error);
+                alert('應用程式初始化失敗，請重新整理頁面');
+            }
         });
     </script>
 </body>

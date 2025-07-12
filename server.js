@@ -5,7 +5,15 @@ const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    },
+    transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000
+});
 
 const hostname = '0.0.0.0';
 const port = process.env.PORT || 3000;
@@ -17,6 +25,7 @@ class ChatRoomManager {
         this.keysQueue = new Map();
         this.socketPairs = new Map();
         this.userPartners = new Map(); // 儲存用戶的配對關係
+        this.userQueues = new Map(); // 追蹤用戶所在的佇列
         this.actions = {
             PAIR: "pair",
             CLEAR_PARTNER: "clearPartner",
@@ -36,9 +45,33 @@ class ChatRoomManager {
 
     // 取消註冊 socket
     unregisterSocket(socketId) {
+        // 從佇列中移除用戶
+        this.removeFromAllQueues(socketId);
+        
+        // 清理配對關係
+        this.cleanupPairing(socketId);
+        
+        // 從 socket 池中移除
         this.socketPairs.delete(socketId);
-        this.removeUserPartnership(socketId);
         console.log(`取消註冊 socket: ${socketId}`);
+    }
+
+    // 從所有佇列中移除用戶
+    removeFromAllQueues(socketId) {
+        // 從一般佇列中移除
+        this.guestQueue = this.guestQueue.filter(socket => socket.id !== socketId);
+        
+        // 從密語佇列中移除
+        for (const [key, queue] of this.keysQueue.entries()) {
+            const filteredQueue = queue.filter(socket => socket.id !== socketId);
+            if (filteredQueue.length !== queue.length) {
+                this.keysQueue.set(key, filteredQueue);
+                console.log(`從密語佇列 ${key} 移除用戶: ${socketId}`);
+            }
+        }
+        
+        // 清理空佇列
+        this.cleanupEmptyQueues();
     }
 
     // 從配對池中獲取夥伴
@@ -52,16 +85,21 @@ class ChatRoomManager {
     }
 
     // 加入等待佇列
-    addToWaitingQueue(socket, queue) {
+    addToWaitingQueue(socket, queue, queueType = 'guest') {
+        // 確保用戶不在其他佇列中
+        this.removeFromAllQueues(socket.id);
+        
         queue.push(socket);
+        this.userQueues.set(socket.id, queueType);
         socket.emit("waiting", "配對中...");
-        console.log(`加入等待佇列: ${socket.id}, 佇列長度: ${queue.length}`);
+        console.log(`加入等待佇列: ${socket.id}, 佇列類型: ${queueType}, 佇列長度: ${queue.length}`);
     }
 
     // 開始配對
     startPairing(socket, key) {
         const trimmedKey = key ? key.trim() : "";
         let queue;
+        let queueType;
 
         if (trimmedKey) {
             // 密語配對
@@ -69,40 +107,59 @@ class ChatRoomManager {
                 this.keysQueue.set(trimmedKey, []);
             }
             queue = this.keysQueue.get(trimmedKey);
+            queueType = `key:${trimmedKey}`;
             console.log(`密語配對: ${trimmedKey}, 佇列長度: ${queue.length}`);
         } else {
             // 一般配對
             queue = this.guestQueue;
+            queueType = 'guest';
             console.log(`隨機配對, 佇列長度: ${queue.length}`);
+        }
+
+        // 檢查用戶是否已經在配對中
+        if (this.userPartners.has(socket.id)) {
+            console.log(`用戶 ${socket.id} 已經在配對中`);
+            socket.emit("error", "您已經在聊天中，請先離開當前聊天");
+            return;
         }
 
         const partner = this.getPartnerFromQueue(queue);
         
-        if (partner) {
+        if (partner && partner.id !== socket.id) {
             console.log(`配對成功: ${socket.id} 與 ${partner.id}`);
             this.pairUsers(socket, partner);
         } else {
             console.log(`加入等待佇列: ${socket.id}`);
-            this.addToWaitingQueue(socket, queue);
+            this.addToWaitingQueue(socket, queue, queueType);
         }
     }
 
     // 配對兩個用戶
     pairUsers(socket, partner) {
         console.log(`發送握手請求: ${partner.id} -> ${socket.id}`);
+        
+        // 從佇列中移除兩個用戶
+        this.removeFromAllQueues(socket.id);
+        this.removeFromAllQueues(partner.id);
+        
         // 建立配對關係
         this.userPartners.set(socket.id, partner.id);
         this.userPartners.set(partner.id, socket.id);
+        
+        // 發送握手請求
         partner.emit("handshake", socket.id);
     }
 
     // 清理配對
-    cleanupPairing(socket, partner) {
-        if (partner) {
-            partner.emit("partnerDisconnect", "對方已離開");
-            this.removeUserPartnership(partner.id);
+    cleanupPairing(socketId) {
+        const partnerId = this.userPartners.get(socketId);
+        if (partnerId) {
+            const partner = this.getPartnerFromPair(partnerId);
+            if (partner) {
+                partner.emit("partnerDisconnect", "對方已離開");
+            }
+            this.removeUserPartnership(socketId);
         }
-        this.removeUserPartnership(socket.id);
     }
 
     // 移除用戶配對關係
@@ -123,9 +180,13 @@ class ChatRoomManager {
             if (partner && message) {
                 console.log(`發送訊息: ${socket.id} -> ${partnerId}`);
                 partner.emit("newMsg", message);
+            } else {
+                console.log(`找不到夥伴或訊息為空: ${socket.id}`);
+                socket.emit("error", "無法發送訊息，請重新配對");
             }
         } else {
             console.log(`找不到夥伴: ${socket.id}`);
+            socket.emit("error", "您尚未配對，請先配對");
         }
     }
 
@@ -139,6 +200,9 @@ class ChatRoomManager {
             socket.emit("handshakeSuccess", "配對成功");
         } else {
             console.log(`握手失敗: 找不到夥伴 ${partnerId}`);
+            socket.emit("error", "配對失敗，請重新嘗試");
+            // 清理配對關係
+            this.removeUserPartnership(socket.id);
         }
     }
 
@@ -159,17 +223,26 @@ class ChatRoomManager {
         for (const [key, queue] of this.keysQueue.entries()) {
             if (queue.length === 0) {
                 this.keysQueue.delete(key);
+                console.log(`清理空密語佇列: ${key}`);
             }
         }
     }
 
     // 獲取配對統計
     getStats() {
+        const keyQueuesInfo = {};
+        for (const [key, queue] of this.keysQueue.entries()) {
+            keyQueuesInfo[key] = queue.length;
+        }
+        
         return {
             totalUsers: this.socketPairs.size,
             totalPartnerships: this.userPartners.size / 2,
             guestQueueLength: this.guestQueue.length,
-            keyQueuesCount: this.keysQueue.size
+            keyQueuesCount: this.keysQueue.size,
+            userQueuesCount: this.userQueues.size,
+            keyQueuesInfo: keyQueuesInfo,
+            timestamp: new Date().toISOString()
         };
     }
 }
@@ -214,9 +287,7 @@ io.on("connection", (socket) => {
     // 斷線處理
     socket.on("disconnect", () => {
         console.log(`用戶斷線: ${socket.id}`);
-        chatManager.cleanupPairing(socket, chatManager.getPartnerFromPair(chatManager.userPartners.get(socket.id)));
         chatManager.unregisterSocket(socket.id);
-        chatManager.cleanupEmptyQueues();
     });
 
     // 清除配對資訊
@@ -230,6 +301,7 @@ io.on("connection", (socket) => {
             chatManager.sendMessageToPartner(socket, message);
         } catch (error) {
             console.error('發送訊息錯誤:', error);
+            socket.emit("error", "發送訊息失敗");
         }
     });
 
@@ -239,6 +311,7 @@ io.on("connection", (socket) => {
             chatManager.handleHandshake(socket, uuid);
         } catch (error) {
             console.error('握手錯誤:', error);
+            socket.emit("error", "握手失敗");
         }
     });
 
