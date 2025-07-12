@@ -884,14 +884,10 @@
 
             hidePairingInterface() {
                 this.pairingContainer.classList.add('hidden');
-                // 清空聊天紀錄
-                this.messageContainer.innerHTML = '';
             }
 
             showPairingInterface() {
                 this.pairingContainer.classList.remove('hidden');
-                // 清空聊天紀錄
-                this.messageContainer.innerHTML = '';
             }
 
             showLeaveConfirm() {
@@ -910,6 +906,8 @@
             leaveChat() {
                 this.socket.emit('goodbye');
                 this.hideLeaveConfirm();
+                // 清空聊天紀錄
+                this.messageContainer.innerHTML = '';
                 this.hideChatInterface();
                 this.partnerLeft = false; // 重置狀態
             }
