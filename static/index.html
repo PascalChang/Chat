@@ -884,11 +884,14 @@
 
             hidePairingInterface() {
                 this.pairingContainer.classList.add('hidden');
+                // 清空聊天紀錄
+                this.messageContainer.innerHTML = '';
             }
 
             showPairingInterface() {
                 this.pairingContainer.classList.remove('hidden');
-                // 不清空聊天紀錄，保留對話歷史
+                // 清空聊天紀錄
+                this.messageContainer.innerHTML = '';
             }
 
             showLeaveConfirm() {
